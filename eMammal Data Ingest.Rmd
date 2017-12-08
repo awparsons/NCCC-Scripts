@@ -1,0 +1,74 @@
+---
+title: "Ingest eMammal Data for R"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r include=F}
+knitr::opts_chunk$set(echo=FALSE)
+
+```
+
+#1. How to download data from the eMammal Website
+
+####To access and download data from the eMammal Website, go to http://emammal.si.edu/analysis/data-download
+
+
+####First, define the geographical areas of interest on the map
+![](C:\Users\Arielle\Desktop\NRC\eMammal\WRC\Scripts/DataDownload1.jpg)
+
+
+####Then, choose project and subproject(s) of interest within the specified region
+![](C:\Users\Arielle\Desktop\NRC\eMammal\WRC\Scripts/DataDownload2.jpg)
+
+
+####Then, choose the species of interest (multiple are allowed)
+![](C:\Users\Arielle\Desktop\NRC\eMammal\WRC\Scripts/DataDownload3.jpg)
+
+
+####Finally, download the data in your browser after agreeing to the terms
+![](C:\Users\Arielle\Desktop\NRC\eMammal\WRC\Scripts/DataDownload4.jpg)
+
+#2. The Dataset
+eMammal datasets contain 18 columns and one row for each detection (sequence).  The columns are defined in the table below:
+
+```{r, echo=F, warning=F}
+library(knitr)
+library(kableExtra)
+
+setwd("C:/Users/Arielle/Desktop/NRC/eMammal/WRC/Scripts")
+dt<-read.csv("Table1.csv")
+names(dt)<-c("Column Name", "Description")
+
+options(knitr.table.format = "html") 
+dt %>%
+  kable("html") %>%
+  kable_styling()
+```
+
+The time columns ("Begin" and "End") contain the letter "T" which must be removed for processing in R.  The code below will read in the data downloaded from the eMammal website and remove the T.  It will further format the times properly for later analysis:
+
+```{r, echo=T}
+#Set your working directory to where you have saved the downloaded file
+
+#Read in the downloaded file, the file name will need to be changed for
+#each new download
+dat<-read.csv(file="sianctapi-selected-observations-5a04a73af3264.csv")
+
+###############Fix the timestamps###############################3
+
+#First replace the Ts with a spac
+dat$Begin <- gsub("T", " ", dat$Begin.Time)
+dat$End <- gsub("T", " ", dat$End.Time)
+
+#Then set the timezone
+ols.sys.timezone <- Sys.timezone()
+Sys.setenv(TZ = 'GMT')
+
+#Finally format the times as POSIXct, the format that R uses for times
+dat$Begin2 <- as.POSIXct(dat$Begin, format = "%Y-%m-%d %H:%M:%S")
+dat$End2 <- as.POSIXct(dat$End, format = "%Y-%m-%d %H:%M:%S")
+
+```
+
