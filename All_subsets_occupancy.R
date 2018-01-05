@@ -58,7 +58,32 @@ mod_global=mark(BEAR, model="Occupancy",
                                            Edge_5km+HDens_5km)), 
           groups=c("Hunting"))
 
-#################### First select the best detection (p) model ############
+######################### Run all subsets #######################
+#This will run all combinations of covariates in the global model
+#and rank them by QAIC
+#remember to use the c-hat from the global model
+dd=dredge(mod_global,rank=QAIC, chat=3.794)
+
+#Output the results to a file 
+write.csv(dd,"BEARQAIC.csv")
+
+#Get model-averaged parameter estimates for all models within top 
+#4 QAIC points
+final_coefs_subset <-summary(model.avg(dd, subset = delta < 4))
+summary<-summary(final_coefs_subset)
+summary
+
+#Get variable importance ranking for full model set
+#This sums the AIC weights of each variable across the models in the
+#set where that variable occurs.  If a variable occurs frequently
+#over the top ranked models, it will receive a higher ranking
+final_coefs <-summary(model.avg(dd))
+varimp<-summary(final_coefs)
+varimp
+
+############## If you have a lot of covariates, you can ############
+############## first select the best detection (p) model ###########
+############## followed by the best occupancy (psi) model ##########
 #Fix the global Psi model and run all subsets of the p covariates
 #Use QAIC for model selection due to overdispersion
 #Check the output of the Global model (above) to get c-hat for 
@@ -83,17 +108,3 @@ write.csv(dd,"pBEARQAIC.csv")
 MuMIn:::fixCoefNames(names(coeffs(mod_global)))
 dd2=dredge(mod_global, fixed=c("p(NVDI_site)","p(WeekDay)","p(Cloud)"),rank=QAIC, chat=3.794)
 write.csv(dd2,"psiBEARQAIC.csv")
-
-#Get model-averaged parameter estimates for all models within top 
-#4 QAIC points
-final_coefs_subset <-summary(model.avg(dd2, subset = delta < 4))
-summary<-summary(final_coefs_subset)
-summary
-
-#Get variable importance ranking for full model set
-#This sums the AIC weights of each variable across the models in the
-#set where that variable occurs.  If a variable occurs frequently
-#over the top ranked models, it will receive a higher ranking
-final_coefs <-summary(model.avg(dd2))
-varimp<-summary(final_coefs)
-varimp
