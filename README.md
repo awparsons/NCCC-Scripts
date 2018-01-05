@@ -1,4 +1,4 @@
-# Scripts
+# Repository Contents
 
 1.  Ingest eMammal Data for R.pdf describes how to download data from the eMammal website
 
