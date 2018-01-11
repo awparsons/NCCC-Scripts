@@ -35,13 +35,9 @@ for (i in 32:319) {
 BEAR$Hunting <- factor(BEAR$Hunting)
 BEAR$LatbyLong <- scale(BEAR$LatbyLong)
 BEAR$Dist_5km <- scale(BEAR$Dist_5km)
-BEAR$Ag_5km <- scale(BEAR$Ag_5km)
-BEAR$LC_5km <- scale(BEAR$LC_5km)
 BEAR$HDens_5km <- scale(BEAR$HDens_5km)
-BEAR$Nearest_neighbor <- scale(BEAR$Nearest_neighbor)
 BEAR$Cam_distance <- as.numeric(BEAR$Cam_distance)
 BEAR$Cam_distance <- scale(BEAR$Cam_distance)
-BEAR$People_site <- scale(BEAR$People_site)
 
 ####################Run the most parameterized model######################
 
@@ -51,18 +47,21 @@ BEAR$People_site <- scale(BEAR$People_site)
 #categorical covariates, you will enter these in the "groups" argument and
 #will obtain separate occupancy estimates for each group.
 mod_global=mark(BEAR, model="Occupancy",
-          model.parameters=list(p=list(formula=~NVDI_site+WeekDay+
-                                         Cloud),
-                                Psi=list(formula=~LatbyLong+
-                                           Dist_5km+Ag_5km+LC_5km+
-                                           Edge_5km+HDens_5km)), 
-          groups=c("Hunting"))
+                model.parameters=list(p=list(formula=~NVDI_site+WeekDay+
+                                               Cloud),
+                                      Psi=list(formula=~LatbyLong+
+                                                 Dist_5km+HDens_5km)), 
+                groups=c("Hunting"))
+
 
 ######################### Run all subsets #######################
+#Open the model output and search it (ctrl-f) for "c-hat"
+mod_global
+
 #This will run all combinations of covariates in the global model
 #and rank them by QAIC
-#remember to use the c-hat from the global model
-dd=dredge(mod_global,rank=QAIC, chat=3.794)
+#Use the c-hat from the global model you searched for above
+dd=dredge(mod_global,rank=QAIC, chat=3.8022487)
 
 #Output the results to a file 
 write.csv(dd,"BEARQAIC.csv")
@@ -96,7 +95,7 @@ MuMIn:::fixCoefNames(names(coeffs(mod_global)))
 #Dredge the detection model, holding the global Psi model fixed.
 #This will run all combinations of p covariates in the global model
 #and rank them by QAIC
-dd=dredge(mod_global, fixed=c("psi(LatbyLong)", "psi(Dist_5km)", "psi(Ag_5km)", "psi(LC_5km)", "psi(Edge_5km)", "psi(HDens_5km)"),rank=QAIC, chat=3.794)
+dd=dredge(mod_global, fixed=c("psi(LatbyLong)", "psi(Dist_5km)",  "psi(HDens_5km)"),rank=QAIC, chat=3.8022487)
 
 #Output the results to a file 
 #Examine the .csv file and choose the top p model
@@ -106,5 +105,5 @@ write.csv(dd,"pBEARQAIC.csv")
 #Then fix that top p model and run all subsets of the Psi covariates
 #remember to use the c-hat from the global model
 MuMIn:::fixCoefNames(names(coeffs(mod_global)))
-dd2=dredge(mod_global, fixed=c("p(NVDI_site)","p(WeekDay)","p(Cloud)"),rank=QAIC, chat=3.794)
+dd2=dredge(mod_global, fixed=c("p(NVDI_site)","p(WeekDay)","p(Cloud)"),rank=QAIC, chat=3.8022487)
 write.csv(dd2,"psiBEARQAIC.csv")
