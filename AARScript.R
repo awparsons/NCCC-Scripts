@@ -41,11 +41,8 @@ species <- list(Prey, Pred1, Pred2) # The species the user wants to focus on, in
 #results, we'll deal with them later
 other_pred<-("Canis latrans|Ursus Americanus|Procyon lotor")
   
-#Change the "sn" to whatever your species column is called
-df.sp <- subset(df, sn %in% species)
-unique(df.sp$sn) #check to make sure data was correctly subset
-
 #Sort by deployment and begin_date_time
+df.sp<-df
 df.sp<-df.sp[with(df.sp, order(title, Begin.Time)), ]
 
 #######################################################################
@@ -160,7 +157,7 @@ for(j in 2:r[[i]]){
 }
 
 for(i in names(df2)){
-  for(j in 2:r[[i]]){
+  for(j in 1:r[[i]]){
     if(as.character(df2[[i]][j, 42])==as.character("PP")){bad5[[i]][j]<-("Bad")}
     df2[[i]]$bad<-rep(NA, nrow(df2[[i]]))
   }
