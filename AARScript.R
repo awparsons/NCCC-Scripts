@@ -37,6 +37,10 @@ Pred1<-"Canis familiaris"
 Pred2<-"Vulpes vulpes"
 species <- list(Prey, Pred1, Pred2) # The species the user wants to focus on, in character and scientific name.
 
+#Define any other predators in the system that could confound 
+#results, we'll deal with them later
+other_pred<-("Canis latrans|Ursus Americanus|Procyon lotor")
+  
 #Change the "sn" to whatever your species column is called
 df.sp <- subset(df, sn %in% species)
 unique(df.sp$sn) #check to make sure data was correctly subset
@@ -59,7 +63,7 @@ df.sp<-df.sp[with(df.sp, order(title, Begin.Time)), ]
 #                                                                     #              
 #       T4=The total time between successive prey detections with a   #
 #                 predator species detection in between               #
-#       (may be many predator detection but ofonly one species)       #
+#       (may be many predator detection but of only one species)       #
 #######################################################################
 
 #First split by deployment
@@ -89,6 +93,8 @@ for(i in names(out)){
     else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, 42]<-(NA)}
     else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, 42]<-("PP")}
     else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, 42]<-("PP")}
+    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(other_pred)) {out[[i]][j, 42]<-("PP")}
+    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(other_pred)) {out[[i]][j, 42]<-("PP")}
     else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, 42]<-(NA)}
     else if (as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, 42]<-("Pred1T2")}
     else if (as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, 42]<-("Pred2T2")}
