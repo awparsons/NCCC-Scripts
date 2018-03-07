@@ -73,28 +73,26 @@ for(i in names(out)){
 }
 
 #Now add the marks
-#The Tmark column ID in this example is #42
-#You will need to change the 42 at the end of each row
-#in the loop below to the appropriate number depending on the Tmark
-#colum ID in your own dataset.
 sn<-list()
 title<-list()
 for(i in names(out)){
   out[[i]]$Tmark<-rep(NA, nrow(out[[i]]))
+  c<-which(colnames(out[[i]])=="Tmark")
   sn[[i]]<-as.data.frame(out[[i]]$sn)
   names(sn[[i]])<-c("sn")
   for(j in 2:nrow(out[[i]])){
-    if(as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(Prey)){out[[i]][j, 42]<-("T3")} 
-    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(Prey)) {out[[i]][j, 42]<-("Pred1T1")}
-    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(Prey)) {out[[i]][j, 42]<-("Pred2T1")}
-    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, 42]<-(NA)}
-    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, 42]<-("PP")}
-    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, 42]<-("PP")}
-    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(other_pred)) {out[[i]][j, 42]<-("PP")}
-    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(other_pred)) {out[[i]][j, 42]<-("PP")}
-    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, 42]<-(NA)}
-    else if (as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, 42]<-("Pred1T2")}
-    else if (as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, 42]<-("Pred2T2")}
+    if(as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(Prey)){out[[i]][j, c]<-("T3")} 
+    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(Prey)) {out[[i]][j, c]<-("Pred1T1")}
+    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(Prey)) {out[[i]][j, c]<-("Pred2T1")}
+    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, c]<-(NA)}
+    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, c]<-("PP")}
+    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, c]<-("PP")}
+    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(other_pred)) {out[[i]][j, c]<-("PP")}
+    else if (as.character(sn[[i]][j,])==as.character(Pred1) & as.character(sn[[i]][j-1,])==as.character(other_pred)) {out[[i]][j, c]<-("PP")}
+    else if (as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(other_pred)) {out[[i]][j, c]<-("PP")}
+    else if (as.character(sn[[i]][j,])==as.character(Pred2) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, c]<-(NA)}
+    else if (as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(Pred1)) {out[[i]][j, c]<-("Pred1T2")}
+    else if (as.character(sn[[i]][j,])==as.character(Prey) & as.character(sn[[i]][j-1,])==as.character(Pred2)) {out[[i]][j, c]<-("Pred2T2")}
     }
 }
 
@@ -105,7 +103,6 @@ for(i in names(out)){
 
 #First remove all the NAs and add 3 final rows, calling them 
 #"Nothing".  These are place holders to allow the loops to work.
-#Again, change any 42 to the appropriate column number for your dataset
 non_na<-list()
 newc<-list()
 newc2<-list()
@@ -118,7 +115,8 @@ bad4<-list()
 bad5<-list()
 r<-list()
 for(i in names(out)){
-non_na[[i]]<-out[[i]][complete.cases(out[[i]][42]),]
+d<-which(colnames(out[[i]])=="Tmark")
+non_na[[i]]<-out[[i]][complete.cases(out[[i]][d]),]
 c<-ncol(non_na[[1]])
 newc[[i]]<-rep(NA, c)
 newc2[[i]]<-rep(NA, c)
@@ -140,46 +138,54 @@ bad5[[i]]<-rep(NA, nrow(df2[[i]]))
 #second one.  If a mark is a T2 then see if the one coming before 
 #it is a T1 for the appropriate predator and mark it "bad" if the
 #sandwich is not intact to remove in the next step
+#Add in the first row
+one<-list()
+for(i in names(df2)){
+  one[[i]]<-out[[i]][1,]
+  one[[i]]$bad<-"Nothing"
+  one[[i]]$Tmark<-"Nothing"
+  df2[[i]]$bad<-"NA"
+  names(df2[[i]])<-names(one[[i]])
+  df2[[i]]<-as.data.frame(rbind(one[[i]], df2[[i]]))
+}
+
 r<-lapply(df2, nrow)
 
 for(i in names(df2)){
 for(j in 1:r[[i]]){
-  if(as.character(df2[[i]][j, 42])==as.character("Pred1T1") & as.character(df2[[i]][j+1, 42])!=as.character("Pred1T2")){bad1[[i]][j]<-("Bad")}
-  else if(as.character(df2[[i]][j, 42])==as.character("Pred2T1") & as.character(df2[[i]][j+1, 42])!=as.character("Pred2T2")){bad2[[i]][j]<-("Bad")}
+  c<-which(colnames(out[[i]])=="Tmark")
+  if(as.character(df2[[i]][j, c])==as.character("Pred1T1") & as.character(df2[[i]][j+1, c])!=as.character("Pred1T2")){bad1[[i]][j]<-("Bad")}
+  else if(as.character(df2[[i]][j, c])==as.character("Pred2T1") & as.character(df2[[i]][j+1, c])!=as.character("Pred2T2")){bad2[[i]][j]<-("Bad")}
 }
 }
 
 for(i in names(df2)){
 for(j in 2:r[[i]]){
-  if(as.character(df2[[i]][j, 42])==as.character("Pred1T2") & as.character(df2[[i]][j-1, 42])!=as.character("Pred1T1")){bad3[[i]][j]<-("Bad")}
-  else if(as.character(df2[[i]][j, 42])==as.character("Pred2T2") & as.character(df2[[i]][j-1, 42])!=as.character("Pred2T1")){bad4[[i]][j]<-("Bad")}
+  c<-which(colnames(out[[i]])=="Tmark")
+  if(as.character(df2[[i]][j, c])==as.character("Pred1T2") & as.character(df2[[i]][j-1, c])!=as.character("Pred1T1")){bad3[[i]][j]<-("Bad")}
+  else if(as.character(df2[[i]][j, c])==as.character("Pred2T2") & as.character(df2[[i]][j-1, c])!=as.character("Pred2T1")){bad4[[i]][j]<-("Bad")}
   }
 }
 
 for(i in names(df2)){
   for(j in 1:r[[i]]){
-    if(as.character(df2[[i]][j, 42])==as.character("PP")){bad5[[i]][j]<-("Bad")}
+    c<-which(colnames(out[[i]])=="Tmark")
+    if(as.character(df2[[i]][j, c])==as.character("PP")){bad5[[i]][j]<-("Bad")}
     df2[[i]]$bad<-rep(NA, nrow(df2[[i]]))
   }
 }
 
 for(i in names(df2)){
 for(j in 1:r[[i]]){
-if(!is.na(bad1[[i]][j])|!is.na(bad2[[i]][j])|!is.na(bad3[[i]][j])|!is.na(bad4[[i]][j])|!is.na(bad5[[i]][j])){df2[[i]][j, 43]<-("Bad")}
+c<-which(colnames(out[[i]])=="bad")
+if(!is.na(bad1[[i]][j])|!is.na(bad2[[i]][j])|!is.na(bad3[[i]][j])|!is.na(bad4[[i]][j])|!is.na(bad5[[i]][j])){df2[[i]][j, c]<-("Bad")}
 }
 }
 
 #Remove the bad rows 
-#Add back in the first row
 df3<-list()
-one<-list()
 for(i in names(df2)){
 df3[[i]]<-df2[[i]]%>%filter(is.na(df2[[i]]$bad))
-one[[i]]<-out[[i]][1,]
-one[[i]]$bad<-"Nothing"
-one[[i]]$Tmark<-"Nothing"
-names(df3[[i]])<-names(one[[i]])
-df3[[i]]<-as.data.frame(rbind(one[[i]], df3[[i]]))
 }
 
 ################## Add times for each Tmark ##########################
@@ -191,14 +197,12 @@ for(i in names(df4)){
 
 #Sort by deployment and begin_date_time
 #Then Add column: 
-#Time_from = Begin.Time (col 40)-End.Time (col 41) 
-#(of row above)
-#Adjust the 40 and 41 for your dataset, they should be begin and end
-#times for the sequences
+#Time_from = Begin.Time-End.Time(of row above)
 for(i in names(df4)){
+  c<-which(colnames(df4[[i]])=="Begin.Time")
+  d<-which(colnames(df4[[i]])=="End.Time")
   df4[[i]]<-df4[[i]][with(df4[[i]], order(title, Begin.Time)), ]
-  df4[[i]]$Time_from_min <- c(NA, difftime((df4[[i]][2:nrow(df4[[i]]), 40]), (df4[[i]][1:(nrow(df4[[i]])-1), 41]), unit="min"))
-  #df4[[i]]$Time_from_min <- c(NA,df4[[i]][2:nrow(df4[[i]]), 40] - df4[[i]][1:(nrow(df4[[i]])-1), 41])
+  df4[[i]]$Time_from_min <- c(NA, difftime((df4[[i]][2:nrow(df4[[i]]), c]), (df4[[i]][1:(nrow(df4[[i]])-1), d]), unit="min"))
   df4[[i]]$Time_from_day <- df4[[i]]$Time_from_min/1440 
   df4[[i]]$title<-droplevels(df4[[i]]$title)
 }
@@ -221,14 +225,18 @@ n<-lapply(df4, nrow)
 #sandwich and save in the appropriate T4 list
 for(i in names(df4)){
   for(j in 2:n[[i]]){
-    if(as.character(df4[[i]][j, 42])==as.character("Pred1T2") & as.character(df4[[i]][j-1, 42])==as.character("Pred1T1")){Pred1T4[[i]][j]<-sum(df4[[i]][j, 45], df4[[i]][j-1, 45])}
+    c<-which(colnames(df4[[i]])=="Tmark")
+    d<-which(colnames(df4[[i]])=="Time_from_day")
+    if(as.character(df4[[i]][j, c])==as.character("Pred1T2") & as.character(df4[[i]][j-1, c])==as.character("Pred1T1")){Pred1T4[[i]][j]<-sum(df4[[i]][j, d], df4[[i]][j-1, d])}
     else {Pred1T4[[i]][j]<-NA}
   }
 }
 
 for(i in names(df4)){
   for(j in 2:n[[i]]){
-    if(as.character(df4[[i]][j, 42])==as.character("Pred2T2") & as.character(df4[[i]][j-1, 42])==as.character("Pred2T1")){Pred2T4[[i]][j]<-sum(df4[[i]][j, 45], df4[[i]][j-1, 45])}
+    c<-which(colnames(df4[[i]])=="Tmark")
+    d<-which(colnames(df4[[i]])=="Time_from_day")
+    if(as.character(df4[[i]][j, c])==as.character("Pred2T2") & as.character(df4[[i]][j-1, c])==as.character("Pred2T1")){Pred2T4[[i]][j]<-sum(df4[[i]][j, d], df4[[i]][j-1, d])}
     else {Pred2T4[[i]][j]<-NA}
   }
 }
@@ -250,7 +258,9 @@ n<-lapply(df4, nrow)
 #Calculate the T3s and save to be compared to the T4s in a later step
 for(i in names(df4)){
   for(j in 2:n[[i]]){
-    if(as.character(df4[[i]][j, 42])==as.character("T3")){T3[[i]][j]<-df4[[i]][j, 45]}
+    c<-which(colnames(df4[[i]])=="Tmark")
+    d<-which(colnames(df4[[i]])=="Time_from_day")
+    if(as.character(df4[[i]][j, c])==as.character("T3")){T3[[i]][j]<-df4[[i]][j, d]}
     else {T3[[i]][j]<-NA}
   }
 }
@@ -260,8 +270,10 @@ for(i in names(df4)){
 #a line for each one in the loop below and add a new output list
 for(i in names(df4)){
   for(j in 2:n[[i]]){
-    if(as.character(df4[[i]][j, 42])==as.character("Pred1T2") & as.character(df4[[i]][j-1, 42])==as.character("Pred1T1")){Pred1T1T2[[i]][j]<-(df4[[i]][j, 45]/df4[[i]][j-1, 45])}
-    else if(as.character(df4[[i]][j, 42])==as.character("Pred2T2") & as.character(df4[[i]][j-1, 42])==as.character("Pred2T1")){Pred2T1T2[[i]][j]<-(df4[[i]][j, 45]/df4[[i]][j-1, 45])}
+    c<-which(colnames(df4[[i]])=="Tmark")
+    d<-which(colnames(df4[[i]])=="Time_from_day")
+    if(as.character(df4[[i]][j, c])==as.character("Pred1T2") & as.character(df4[[i]][j-1, c])==as.character("Pred1T1")){Pred1T1T2[[i]][j]<-(df4[[i]][j, d]/df4[[i]][j-1, d])}
+    else if(as.character(df4[[i]][j, c])==as.character("Pred2T2") & as.character(df4[[i]][j-1, c])==as.character("Pred2T1")){Pred2T1T2[[i]][j]<-(df4[[i]][j, d]/df4[[i]][j-1, d])}
   }
 }
 
