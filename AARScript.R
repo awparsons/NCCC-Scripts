@@ -372,36 +372,43 @@ ggplot(data=Preds_z, aes(x=Pred, y=log(T4T3Ratio))) +
 T4_Pred1 <- data.frame(Title = rep(names(Pred1T4), sapply(Pred1T4, length)),
                       T4 = unlist(Pred1T4, use.names=FALSE))
 T4_Pred1<-as.data.frame(T4_Pred1[complete.cases(T4_Pred1),])
-T4_Pred1$Pred<-rep(1, nrow(T4_Pred1))
 T4_Pred2 <- data.frame(Title = rep(names(Pred2T4), sapply(Pred2T4, length)),
                        T4 = unlist(Pred2T4, use.names=FALSE))
 T4_Pred2<-as.data.frame(T4_Pred2[complete.cases(T4_Pred2),])
-T4_Pred2$Pred<-rep(1, nrow(T4_Pred2))
 T3_z <- data.frame(Title = rep(names(T3), sapply(T3, length)),
                        T4 = unlist(T3, use.names=FALSE))
 T3_z<-as.data.frame(T3_z[complete.cases(T3_z),])
-T3_z$Pred<-rep(0, nrow(T3_z))
 
-#Then make sure we have at least 1 T3 and T4 for each site, otherwise
+#Get the mean T3 and T4 for each site
+detach(package:plyr)
+library(dplyr)
+T4_P1<-T4_Pred1%>%group_by(Title)%>%summarize(mean=mean(T4))
+T4_P1$Pred<-rep(1, nrow(T4_P1))
+T4_P2<-T4_Pred2%>%group_by(Title)%>%summarize(mean=mean(T4))
+T4_P2$Pred<-rep(1, nrow(T4_P2))
+T3_s<-T3_z%>%group_by(Title)%>%summarize(mean=mean(T4))
+T3_s$Pred<-rep(0, nrow(T3_s))
+
+#Then make sure we have mean T3 and T4 for each site, otherwise
 #Remove the sites
 `%notin%` <- function(x,y) !(x %in% y) 
-d<-setdiff(as.character(T4_Pred1$Title), as.character(T3_z$Title))
-d2<-setdiff(T3_z$Title, T4_Pred1$Title)
-dat_P1_z<-T3_z[T3_z$Title %notin% d2,]
-dat_P1_q<-T4_Pred1[T4_Pred1$Title %notin% d,]
+d<-setdiff(as.character(T4_P1$Title), as.character(T3_s$Title))
+d2<-setdiff(T3_s$Title, T4_P1$Title)
+dat_P1_z<-T3_s[T3_s$Title %notin% d2,]
+dat_P1_q<-T4_P1[T4_P1$Title %notin% d,]
 dat_P1<-as.data.frame(rbind(dat_P1_z, dat_P1_q))
 
-dn<-setdiff(as.character(T4_Pred2$Title), as.character(T3_z$Title))
-d2n<-setdiff(T3_z$Title, T4_Pred2$Title)
-dat_P2_z<-T3_z[T3_z$Title %notin% d2n,]
-dat_P2_q<-T4_Pred2[T4_Pred2$Title %notin% dn,]
+dn<-setdiff(as.character(T4_P2$Title), as.character(T3_s$Title))
+d2n<-setdiff(T3_s$Title, T4_P2$Title)
+dat_P2_z<-T3_s[T3_s$Title %notin% d2n,]
+dat_P2_q<-T4_P2[T4_P2$Title %notin% dn,]
 dat_P2<-as.data.frame(rbind(dat_P2_z, dat_P2_q))
 
 #Fit a Cox proportional hazard model to see if the time between
 #successive prey detections is significantly different if a predator
 #passes in the middle
-cox_P1 <- coxph(Surv(T4) ~ Pred, data = dat_P1)
-cox_P2 <- coxph(Surv(T4) ~ Pred, data = dat_P2)
+cox_P1 <- coxph(Surv(mean) ~ Pred, data = dat_P1)
+cox_P2 <- coxph(Surv(mean) ~ Pred, data = dat_P2)
 
 #A significant p.value indicates predators have an influence on the
 #time to the next prey detection (i.e. provoke avoidance)
@@ -418,13 +425,13 @@ summary(cox_P2)
 #Time-to-detection of the next prey species at sites where the 
 #predator is present (pred=1) and absent (pred=0)
 
-fit_P1 <- survfit(Surv(T4) ~ Pred, data = dat_P1)
-fit_P2 <- survfit(Surv(T4) ~ Pred, data = dat_P2)
+fit_P1 <- survfit(Surv(mean) ~ Pred, data = dat_P1)
+fit_P2 <- survfit(Surv(mean) ~ Pred, data = dat_P2)
 
 ggsurvplot(fit_P1, data = dat_P1, conf.int = TRUE,
            ggtheme = theme_minimal(), 
            xlab=c("Days to next prey passage"), ylab=c("Probability of second prey passage"),
-           xlim=c(0, max(dat_P1$T4)), fun="event", title=Pred1)
+           xlim=c(0, max(dat_P1$mean)), fun="event", title=Pred1)
 
 ggsurvplot(fit_P2, data = dat_P2, conf.int = TRUE,
            ggtheme = theme_minimal(), 
