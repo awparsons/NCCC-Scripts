@@ -72,6 +72,21 @@ for(i in names(out)){
   if (nrow(out[[i]]) < 2) {out[[i]]<-NULL}
 }
 
+#See how many detections of each species at each site
+t<-list()
+Count<-data.frame(Site=character(),
+                  Prey=numeric(),
+                  Pred1=numeric(),
+                  Pred2=numeric())
+for(i in names(out)){
+  t[[i]]<-table(out[[i]]$sn)
+  Count[i, 2]<-t[[i]][names(t[[i]])==Prey]
+  Count[i, 3]<-t[[i]][names(t[[i]])==Pred1]
+  Count[i, 4]<-t[[i]][names(t[[i]])==Pred2]
+}
+
+Count
+
 #Now add the marks
 sn<-list()
 title<-list()
@@ -288,7 +303,11 @@ Pred2_z <- data.frame(Title = rep(names(Pred2T1T2), sapply(Pred2T1T2, length)),
 Pred2_z<-as.data.frame(Pred1_z[complete.cases(Pred2_z),])
 Pred2_z$Pred<-rep("Pred2", nrow(Pred2_z))
 Preds_t<-as.data.frame(rbind(Pred1_z, Pred2_z))
-  
+
+#Check how many T2/T1 ratios you have
+nrow(Pred1_z)
+nrow(Pred2_z)
+
 ################# Compute T4/T3 ratio for each site/predator #######################
 #Calculate means
 Pred1T4_mean<-lapply(Pred1T4, mean, na.rm=TRUE)

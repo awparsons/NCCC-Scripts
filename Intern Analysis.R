@@ -28,6 +28,7 @@ library(xtable)
 library(overlap)
 library(ggplot2)
 library(activity)
+library(data.table)
 
 ############################################################################### 
 #                   Step 2: Load and clean the dataset                        #
@@ -198,8 +199,13 @@ df.sp2 <- as.data.frame(subset(df3, Common.Name %in% species2))
 
 ########################## Make the Plot ########################################
 #Split the data into a list to loop through and create lists to save output
-tt1<-split(df.sp1, df.sp1$Block)
-tt2<-split(df.sp2, df.sp2$Block)
+tt1<-split(df.sp1, list(df.sp1$Block, df.sp1$Region))
+tt2<-split(df.sp2, list(df.sp2$Block, df.sp2$Region))
+
+#Remove elements with just 5 rows
+for(i in names(tt1)){if (nrow(tt1[[i]]) < 6) {tt1[[i]]<-NULL}}
+for(i in names(tt2)){if (nrow(tt2[[i]]) < 6) {tt2[[i]]<-NULL}}
+
 dp_sp1<-list()
 dp_sp2<-list()
 
@@ -208,37 +214,34 @@ dp_sp2<-list()
 for (i in names(tt1)){
   for (j in names(tt2)){
   dp_sp1[[i]]<-densityPlot(tt1[[i]]$radians, xscale = 24, xcenter = "noon", add = FALSE, rug = FALSE, 
-              extend = NULL, n.grid = 100, adjust = 0.2, main= paste(species1, min(tt1[[i]]$Date), "-", max(tt1[[i]]$Date), sep=" "),
+              extend = NULL, n.grid = 100, adjust = 0.2, main= paste(species1, i, min(tt1[[i]]$Date), "-", max(tt1[[i]]$Date), sep=" "),
               xlab = "Time", ylab = "Density")
   dev.copy(jpeg,filename=paste(species1, i,"_densityPlot.jpg", sep=""))
   dev.off ()
   
-  dp_sp2[[i]]<-densityPlot(tt2[[i]]$radians, xscale = 24, xcenter = "noon", add = FALSE, rug = FALSE, 
-                           extend = NULL, n.grid = 100, adjust = 0.2, main= paste(species2, min(tt2[[i]]$Date), "-", max(tt2[[i]]$Date), sep=" "),
+  dp_sp2[[j]]<-densityPlot(tt2[[j]]$radians, xscale = 24, xcenter = "noon", add = FALSE, rug = FALSE, 
+                           extend = NULL, n.grid = 100, adjust = 0.2, main= paste(species2, j, min(tt2[[j]]$Date), "-", max(tt2[[j]]$Date), sep=" "),
                            xlab = "Time", ylab = "Density")
-  dev.copy(jpeg,filename=paste(species2, i,"_densityPlot.jpg", sep=""))
+  dev.copy(jpeg,filename=paste(species2, j,"_densityPlot.jpg", sep=""))
   dev.off ()
   
   }
 }
 
 #Now do the same as above but put them on the same plot
-for (i in names(tt1)){
-  for (j in names(tt2)){
-    dp_sp1[[i]]<-densityPlot(tt1[[i]]$radians, xscale = 24, xcenter = "noon", add = FALSE, rug = FALSE, 
-                             extend = NULL, n.grid = 100, adjust = 0.2, main= paste(min(tt2[[i]]$Date), "-", max(tt2[[i]]$Date), sep=" "),
+#Use only elements with both species present
+tt1p<-tt1[names(tt1) %in% names(tt2)]
+  
+for (i in names(tt1p)){
+    dp_sp1[[i]]<-densityPlot(tt1p[[i]]$radians, xscale = 24, xcenter = "noon", add = FALSE, rug = FALSE, 
+                             extend = NULL, n.grid = 100, adjust = 0.2, main= paste(unique(tt1p[[i]]$Region), min(tt1p[[i]]$Date), "-", max(tt1p[[i]]$Date), sep=" "),
                              xlab = "Time", ylab = "Density")
-    
     densityPlot(tt2[[i]]$radians, add = TRUE, col = 'blue')
     legend ('bottomleft', c(species1,species2), lty = 1, col = c('black','blue'), bg = 'white')
     dev.copy(jpeg,filename=paste(species1, species2, i,"_densityPlot.jpg", sep=""))
-    #to draw lines indicating certain areas of time on the plot
-    #the set numbers shows crepescular periods
-    abline (v = c(4.5, 7.0, (17+0/60), (20+0/60)), lty = 3, col='grey')
     dev.off ()
     
   }
-}
 
 ################################################################################
 #         Step 6: Determing species activity pattern overlap                   #
@@ -249,19 +252,16 @@ for (i in names(tt1)){
 ol_plt<-list()
 ol_est<-NA
 
-for (i in names(tt1)){
-  for (j in names(tt2)){
-    ol_plt[[i]]<-overlapPlot (tt1[[i]]$radians, tt2[[i]]$radians, 
+for (i in names(tt1p)){
+    ol_plt[[i]]<-overlapPlot (tt1p[[i]]$radians, tt2[[i]]$radians, 
              main = paste(species1, "and", species2, "\nActivity Pattern Overlap\n",
                           min(tt2[[i]]$Date), "-", max(tt2[[i]]$Date), sep=" "))
-    abline (v = c(4.5, 7.0, (17+0/60), (20+0/60)), lty = 3)
     legend ('top',c(species1, species2), lty = c(1,2), col = c(1,4), bty = 'n')
     dev.copy(jpeg,filename=paste(species1, species2, i, "_temporaloverlap.jpg", sep=""));
     dev.off ()
     #Calculates estimated activity pattern overlap (%) based on times of observation 
     #for 2 species 
-    ol_est[i]<-overlapEst(tt1[[i]]$radians, tt2[[i]]$radians, type=c("Dhat1"))
-  }
+    ol_est[i]<-overlapEst(tt1p[[i]]$radians, tt2[[i]]$radians, type=c("Dhat1"))
 }
 
-ol_est
+as.data.frame(ol_est)
