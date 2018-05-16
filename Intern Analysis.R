@@ -19,11 +19,11 @@ setwd("C:/Users/Arielle/Desktop/NRC/eMammal/WRC/Scripts/Scripts")
 #If you do not have that package, it will go ahead and install them.
 list.of.packages<-c("dplyr", "plyr", "xtable", "overlap", "ggplot2", "activity")
 new.packages<-list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages))installed.packages(new.packages)
+if(length(new.packages))install.packages(new.packages)
 
 #Now load the needed packages
-library(dplyr)
 library(plyr)
+library(dplyr)
 library(xtable)
 library(overlap)
 library(ggplot2)
@@ -37,7 +37,7 @@ library(data.table)
 #Load the latest dataset downloaded from the website
 #Note that the filename will change each time so make sure it is
 #edited properly below. 
-dat <-read.csv(file="sianctapi-selected-observations-5a04a73af3264.csv")
+dat <-read.csv(file="sianctapi-selected-observations-5ac6624e53b28.csv")
 names(dat)#these are the column names
 unique(dat$Subproject)#these are the counties in the dataset
 
@@ -48,41 +48,38 @@ ols.sys.timezone <- Sys.timezone() #Setting timezone
 Sys.setenv(TZ = 'EST') #Setting timezone --- "EST" is eastern timezone
 dat$Begin2 <- as.POSIXct(dat$Begin, format = "%Y-%m-%d %H:%M:%S") #This formats the date and time to desired formats
 dat$End2 <- as.POSIXct(dat$End, format = "%Y-%m-%d %H:%M:%S")
+class(dat$Begin2)
 
 #Fix misspelled county names
 dat$Subproject<-revalue(dat$Subproject, c("Allegheny County"="Alleghany County"))
 
 ################## Fix/remove any incorrect timestamps #############################
+
+#Resaves as a new object in case we need to backtrack to the old
+#object
 z<-dat
-#Calculate start and end dates for each camera
-start.dates <- filter(z, Begin2 == min(Begin2, na.rm = T))[,c("Deployment.Name", "Begin2")]
-colnames(start.dates) <- c("Deployment.Name", "Start.Date")
-
-end.dates <- filter(z, Begin2 == max(Begin2, na.rm = T))[,c("Deployment.Name", "Begin2")]
-colnames(end.dates) <- c("Deployment.Name", "End.Date")
-
-z <- merge(z, start.dates, by = "Deployment.Name", all.x = T, suffixes = '')
-z <- merge(z, end.dates, by = "Deployment.Name", all.x = T, suffixes = '')
-z$Total.days.Sampled <- difftime(z$End.Date, z$Start.Date, units = "days") # calculate how long the camera was sampling, in days.
 
 #Clean out rows where camera time not set properly
-times <- c("2012-01-01 00:00:00", "2013-01-01 00:00:00", 
-           "2014-01-01 00:00:00", "2015-01-01 00:00:00", 
-           "2016-01-01 00:00:00", "2017-01-01 00:00:00", 
-           "2018-01-01 00:00:00", "2019-01-01 00:00:00", 
-           "2020-01-01 00:00:00", "2021-01-01 00:00:00")
-
-#If a deployment has one of the times above, remove any 
-#data with different years than the max year
-`%notin%` <- function(x,y) !(x %in% y) 
-z$TI<-z$Begin %notin% times
+#The project started in 2016 and it is now 2018 so remove all other
+#years
 z$Date<-as.Date(z$Begin, format="%Y-%m-%d")
-z$Year<-format(z$Date, format="%Y")
-z$RM<-NA
-z<-z%>%filter(Year<2018)
-p<-z %>%group_by(Deployment.Name)%>%mutate(RM=(ifelse(any(TI=="FALSE") & Year < max(Year),
-                                                         "remove", "keep")))
-z<-filter(p, RM=="keep")
+summary(z$Date)
+z$Year<-as.numeric(format(z$Date, format="%Y"))
+z<-subset(z, Year> "2016" & Year < "2019")
+summary(z$Date)
+
+#Calculate start and end dates for each camera
+detach("package:plyr")
+library(dplyr)
+z <- z%>%group_by(Deployment.Name)%>%mutate(Start.Date=min(Begin2, na.rm = T),End.Date=max(End2, na.rm=T))
+z<-as.data.frame(z)
+names(z)
+summary(z$Start.Date)
+z$Total.days.Sampled <- difftime(z$End.Date, z$Start.Date, units = "days") # calculate how long the camera was sampling, in days.
+names(z)
+z$Total.days.Sampled
+
+library(plyr)
 
 ################## Check that the Species names are correct #######################
 #Double check the common names and species names to make sure the data does not have species not present in that area
@@ -115,55 +112,69 @@ mountains.df$Region<-c("Mountains")
 piedmont.df$Region<-c("Piedmont")
 
 df2<-as.data.frame(rbind(coastal.df, sandhills.df, mountains.df, piedmont.df))
+names(df2)
+df2$Region
 
 ############## Turn the time into radians for activity plots ######################
-setDT(df2)[,paste0("Begin3",1:2):= tstrsplit(Begin," ")] #Splits the time stamp into Date and Time Columns
-setnames(df2, old = c('Begin31','Begin32'), new = c('Date','Time')) #Renames the new columns 
+#We do this since time (daily activity) is circular!
 
+#Splits the time stamp into Date and Time Columns and names the new columns
+df2$Time <- format(as.POSIXct(df2$Begin2) ,format = "%H:%M:%S")
+
+#Splits new time into hour, minutes and seconds and names the new
+#columns
 setDT(df2)[,paste0("Times",1:3):= tstrsplit(Time,":")]
 df2$hours<-as.numeric(df2$Times1)
 df2$mins<-as.numeric(df2$Times2)
 df2$seconds<-as.numeric(df2$Times3)
 
+#Converts all time to minutes then combines into total minutes
 df2$hours<-df2$hours * 60
 df2$seconds<-df2$seconds / 60
 df2$totalminutes<-df2$hours + df2$mins + df2$seconds
 
-#This gives you a warning but works anyway
-df2$totalminutes2<-apply(df2, MARGIN=2, 
-                         FUN=function(x) (df2$totalminutes-min(df2$totalminutes))/diff(range(df3$totalminutes)))
+#Calculates the time "position" of each detection over the deployment
+df2<-as.data.frame(df2%>%group_by(Deployment.Name)%>%mutate(totalminutes2=(df2$totalminutes-min(df2$totalminutes))/(diff(range(df2$totalminutes)))))
 
-df2$radians <- df2$totalminutes2 * 2 * pi  #This turns total minutes into radians
-#Time is now converted into radians
-
+#Converts time "position" to radians
+df2$radians <- df2$totalminutes2 * 2 * pi
+df2$radians
 ################################################################################## 
 #                   Step 3: Define time blocks (2 months)                        #
 #                                                                                #
 ##################################################################################
+
+#Resaves as a new object
 ss<-df2
 
 #First find the min and max of the study
 min(ss$Date)
 max(ss$Date)
 
-#Set the number of 2 month intervals in the study period
+#Set the number of 2 month (60 days) intervals in the study period
 n<-(as.numeric(max(ss$Date)-min(ss$Date))/60)+1
 n<-round(n, 0)
+n
 y<-seq(from=60, to=(60*n), by=60)
+y
 
 #Split the data into those 2 month periods and mark each period in a column
 #called "Block"
-t<-list()
+t<-vector("list", length(y))
 t[[1]]<-ss[ss$Date >= min(ss$Date) & ss$Date <= (min(ss$Date)+60),]
 t[[1]]$Block<-c("1")
 for (i in 2:length(y)){
   t[[i]]<-ss[ss$Date > (min(ss$Date)+y[i-1]) & ss$Date <= (min(ss$Date)+y[i]),]
-  t[[i]]$Block<-c(i)
+  if(nrow(t[[i]])<1){is.null(t[[i]])}
+  else{t[[i]]$Block<-c(i)}
 }  
 
 #Recombine the list into a data frame
 df3 <- do.call("rbind", t)
 df3<-as.data.frame(df3)
+names(df3)
+head(df3, 15)
+unique(df3$Block)
 
 ################################################################################## 
 #                   Step 4: Choose the species                                   #
@@ -180,13 +191,6 @@ species<-c("Coyote", "Grey Fox")
 
 df.sp <- as.data.frame(subset(df3, Common.Name %in% species))
 
-#Add list of empty cameras back to species subset
-`%notin%` <- function(x,y) !(x %in% y) 
-cam<-subset(df3, !(Deployment.Name %in% df.sp$Deployment.Name))
-cam$Count[cam$Count>0]  <- 0
-cam$Common.Name[which(cam$Common.Name %notin% species)] <- NA
-ss<-rbind(df.sp, cam)
-
 #################################################################################
 #       Step 5: Make Activity (time of day) graphs for 2 month periods          #
 #                                                                               #            
@@ -202,7 +206,8 @@ df.sp2 <- as.data.frame(subset(df3, Common.Name %in% species2))
 tt1<-split(df.sp1, list(df.sp1$Block, df.sp1$Region))
 tt2<-split(df.sp2, list(df.sp2$Block, df.sp2$Region))
 
-#Remove elements with just 5 rows
+#Remove elements with just 5 rows since the low sample size will
+#not give accurate results
 for(i in names(tt1)){if (nrow(tt1[[i]]) < 6) {tt1[[i]]<-NULL}}
 for(i in names(tt2)){if (nrow(tt2[[i]]) < 6) {tt2[[i]]<-NULL}}
 
@@ -237,7 +242,7 @@ for (i in names(tt1p)){
                              extend = NULL, n.grid = 100, adjust = 0.2, main= paste(unique(tt1p[[i]]$Region), min(tt1p[[i]]$Date), "-", max(tt1p[[i]]$Date), sep=" "),
                              xlab = "Time", ylab = "Density")
     densityPlot(tt2[[i]]$radians, add = TRUE, col = 'blue')
-    legend ('bottomleft', c(species1,species2), lty = 1, col = c('black','blue'), bg = 'white')
+    legend ('bottomleft', c(species1,species2), lty = 1, col = c('black','blue'))
     dev.copy(jpeg,filename=paste(species1, species2, i,"_densityPlot.jpg", sep=""))
     dev.off ()
     
@@ -253,11 +258,11 @@ ol_plt<-list()
 ol_est<-NA
 
 for (i in names(tt1p)){
-    ol_plt[[i]]<-overlapPlot (tt1p[[i]]$radians, tt2[[i]]$radians, 
-             main = paste(species1, "and", species2, "\nActivity Pattern Overlap\n",
-                          min(tt2[[i]]$Date), "-", max(tt2[[i]]$Date), sep=" "))
+    ol_plt[[i]]<-overlapPlot(tt1p[[i]]$radians, tt2[[i]]$radians, 
+             main = paste(species1, "and", species2, "Overlap\n",
+                          min(tt2[[i]]$Date), "-", max(tt2[[i]]$Date), "\n", i, sep=" "))
     legend ('top',c(species1, species2), lty = c(1,2), col = c(1,4), bty = 'n')
-    dev.copy(jpeg,filename=paste(species1, species2, i, "_temporaloverlap.jpg", sep=""));
+    dev.copy(jpeg,filename=paste("Overlap_", species1, species2, i, ".jpg", sep=""));
     dev.off ()
     #Calculates estimated activity pattern overlap (%) based on times of observation 
     #for 2 species 

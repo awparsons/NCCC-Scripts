@@ -304,6 +304,11 @@ Pred2_z<-as.data.frame(Pred1_z[complete.cases(Pred2_z),])
 Pred2_z$Pred<-rep("Pred2", nrow(Pred2_z))
 Preds_t<-as.data.frame(rbind(Pred1_z, Pred2_z))
 
+library(dplyr)
+library(plotrix)
+m<-as.data.frame(Preds_t%>%group_by(Pred)%>%summarize(mean=mean(T2T1Ratio), sd=sd(T2T1Ratio), se=std.error(T2T1Ratio)))
+m
+
 #Check how many T2/T1 ratios you have
 nrow(Pred1_z)
 nrow(Pred2_z)
